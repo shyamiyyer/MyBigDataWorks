@@ -1,0 +1,321 @@
+--Create a directory
+hadoop fs -mkdir Cproject/Bdata/GA
+
+--crete input and output directories
+hadoop fs -mkdir Cproject/Bdata/GA/input
+
+--check for the directory
+hadoop fs -ls /user/Jig13895/Cproject/Bdata/GA
+
+--move the input file into Hdfs path
+hadoop fs -put /home/data/CampaignData.csv hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/GA/input;
+hadoop fs -put /home/data/CampaignData_full.csv hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/GA/input;
+
+--check for the input file
+hadoop fs -ls 
+
+
+--Load data to PIG; do the data preprocessing/cleaning/transformation
+open grunt shell and do the execution
+
+to use piggybank,we have to first register the jar and define the function that u use; we can use either CSVLoader()/CSVExcelStorage();
+
+register '/home/data/piggybank.jar';
+define CSVLoader org.apache.pig.piggybank.storage.CSVLoader();
+
+cData = LOAD '/user/Jig13895/Cproject/Bdata/GA/input/CampaignData.csv' USING CSVLoader();
+
+--Clean the data in PIG
+
+cData_reqClmns= FOREACH cData generate (chararray) $0 AS CLICK_FLG,(chararray) $1 AS OPEN_FLG,(chararray) $4 AS ASIAN_CD ,(chararray) $50 AS GNDR_OF_CHLDRN_0_3,
+(chararray) $53 AS GNDR_OF_CHLDRN_4_6,(chararray) $54 AS GNDR_OF_CHLDRN_7_9,(chararray) $51 AS GNDR_OF_CHLDRN_10_12,(chararray) $52 AS GNDR_OF_CHLDRN_13_18,
+(chararray) $60 AS I1_GNDR_CODE,(chararray) $61 AS I1_INDIV_HHLD_STATUS_CODE,$76 AS NUMBER_OF_CHLDRN_18_OR_LESS,(chararray) $92 AS PRESENCE_OF_CHLDRN,
+(chararray) $101 AS TRW_INCOME_CD_V4,(chararray) $125 AS statcd_hh_mem1,(chararray) $126 AS statcd_hh_mem2,(chararray) $127 AS statcd_hh_mem3,
+(chararray) $128 AS statcd_hh_mem4,(chararray) $129 AS statcd_hh_mem5,(chararray) $130 AS statcd_hh_mem6,(chararray) $131 AS statcd_hh_mem7,$132 AS statcd_hh_mem8,
+(chararray) $264 AS new_id,(chararray)$272 AS Mailed_Date;
+
+cData_reqClmns_new= FOREACH cData_reqClmns generate CLICK_FLG AS CLICK_FLG,OPEN_FLG AS OPEN_FLG, 
+(ASIAN_CD=='' ? 'null' : (ASIAN_CD is null ? 'null' : ASIAN_CD)) AS ASIAN_CD ,
+(GNDR_OF_CHLDRN_0_3==''?'null':(GNDR_OF_CHLDRN_0_3 is null?'null':GNDR_OF_CHLDRN_0_3)) AS GNDR_OF_CHLDRN_0_3,
+(GNDR_OF_CHLDRN_4_6==''?'null':(GNDR_OF_CHLDRN_4_6 is null?'null':GNDR_OF_CHLDRN_4_6)) AS GNDR_OF_CHLDRN_4_6,
+(GNDR_OF_CHLDRN_7_9==''?'null':(GNDR_OF_CHLDRN_7_9 is null?'null':GNDR_OF_CHLDRN_4_6)) AS GNDR_OF_CHLDRN_7_9,
+(GNDR_OF_CHLDRN_10_12==''?'null':(GNDR_OF_CHLDRN_10_12 is null?'null':GNDR_OF_CHLDRN_10_12)) AS GNDR_OF_CHLDRN_10_12,
+(GNDR_OF_CHLDRN_13_18==''?'null':(GNDR_OF_CHLDRN_13_18 is null?'null':GNDR_OF_CHLDRN_13_18)) AS GNDR_OF_CHLDRN_13_18,
+(I1_GNDR_CODE==''?'null':(I1_GNDR_CODE is null?'null':I1_GNDR_CODE)) AS I1_GNDR_CODE,
+(I1_INDIV_HHLD_STATUS_CODE==''?'null':(I1_INDIV_HHLD_STATUS_CODE is null?'null':I1_INDIV_HHLD_STATUS_CODE)) AS I1_INDIV_HHLD_STATUS_CODE, 
+(NUMBER_OF_CHLDRN_18_OR_LESS==''?'null':(NUMBER_OF_CHLDRN_18_OR_LESS is null?'null':NUMBER_OF_CHLDRN_18_OR_LESS)) AS NUMBER_OF_CHLDRN_18_OR_LESS, 
+ (PRESENCE_OF_CHLDRN==''?'null':(PRESENCE_OF_CHLDRN is null?'null':PRESENCE_OF_CHLDRN)) AS PRESENCE_OF_CHLDRN,
+(TRW_INCOME_CD_V4==''?'null':(TRW_INCOME_CD_V4 is null?'null':TRW_INCOME_CD_V4)) AS TRW_INCOME_CD_V4,
+(statcd_hh_mem1==''?'null':(statcd_hh_mem1 is null?'null':statcd_hh_mem1)) AS statcd_hh_mem1,
+(statcd_hh_mem2==''?'null':(statcd_hh_mem2 is null?'null':statcd_hh_mem2)) AS statcd_hh_mem2,
+(statcd_hh_mem3==''?'null':(statcd_hh_mem3 is null?'null':statcd_hh_mem3)) AS statcd_hh_mem3,
+(statcd_hh_mem4==''?'null':(statcd_hh_mem4 is null?'null':statcd_hh_mem4)) AS statcd_hh_mem4,
+(statcd_hh_mem5==''?'null':(statcd_hh_mem5 is null?'null':statcd_hh_mem5)) AS statcd_hh_mem5,
+(statcd_hh_mem6==''?'null':(statcd_hh_mem6 is null?'null':statcd_hh_mem6)) AS statcd_hh_mem6,
+(statcd_hh_mem7==''?'null':(statcd_hh_mem7 is null?'null':statcd_hh_mem7)) AS statcd_hh_mem7,
+(statcd_hh_mem8==''?'null':(statcd_hh_mem8 is null?'null':statcd_hh_mem8)) AS statcd_hh_mem8,
+(statcd_hh_mem1==''?0:(statcd_hh_mem1 is null?0:1)) AS statcd_hh_mem_cnt1,
+(statcd_hh_mem2==''?0:(statcd_hh_mem2 is null?0:1)) AS statcd_hh_mem_cnt2,
+(statcd_hh_mem3==''?0:(statcd_hh_mem3 is null?0:1)) AS statcd_hh_mem_cnt3,
+(statcd_hh_mem4==''?0:(statcd_hh_mem4 is null?0:1)) AS statcd_hh_mem_cnt4,
+(statcd_hh_mem5==''?0:(statcd_hh_mem5 is null?0:1)) AS statcd_hh_mem_cnt5,
+(statcd_hh_mem6==''?0:(statcd_hh_mem6 is null?0:1)) AS statcd_hh_mem_cnt6,
+(statcd_hh_mem7==''?0:(statcd_hh_mem7 is null?0:1)) AS statcd_hh_mem_cnt7,
+(statcd_hh_mem8==''?0:(statcd_hh_mem8 is null?0:1)) AS statcd_hh_mem_cnt8,
+new_id AS new_id,Mailed_Date AS Mailed_Date,SUBSTRING(Mailed_Date,0,3) AS Day,SUBSTRING(Mailed_Date,5,13) AS Date,(SUBSTRING(Mailed_Date,14,19)) AS TimeStamp, 
+(SUBSTRING(Mailed_Date,20,22)) AS Am_Pm,(SUBSTRING(Mailed_Date,5,7)=='01' ? 'Jan' :(SUBSTRING(Mailed_Date,5,7)=='02' ? 'Feb' :(SUBSTRING(Mailed_Date,5,7)=='03' ? 'Mar' : (SUBSTRING(Mailed_Date,5,7)=='04' ? 'April' : (SUBSTRING(Mailed_Date,5,7)=='05' ? 'May' : (SUBSTRING(Mailed_Date,5,7)=='06' ? 'Jun' :(SUBSTRING(Mailed_Date,5,7)=='07' ? 'Jul' : (SUBSTRING(Mailed_Date,5,7)=='08' ? 'Aug' : (SUBSTRING(Mailed_Date,5,7)=='09' ? 'Sep' : (SUBSTRING(Mailed_Date,5,7)=='10' ? 'Oct' :(SUBSTRING(Mailed_Date,5,7)=='11' ? 'Nov' : 'December'))))))))))) AS Month_Desc;
+
+--check the filtered/cleaned data
+
+dump ;
+
+
+--store the pig output in HDFS
+--note: outpt directory should not exist in prior
+
+STORE cData_reqClmns_new INTO 'hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/GA/outputFromPigSampleNew' USING PigStorage('|'); 
+
+--check the output file
+hadoop fs -ls
+hadoop fs -cat
+
+
+--create table in hive; Mostly it will be an external table
+CREATE EXTERNAL TABLE jig13895.bDataFinalGAsampleNew (CLICK_FLG STRING,OPEN_FLG STRING,ASIAN_CD STRING,GNDR_OF_CHLDRN_0_3 STRING,
+GNDR_OF_CHLDRN_4_6 STRING,GNDR_OF_CHLDRN_7_9 STRING,GNDR_OF_CHLDRN_10_12 STRING,GNDR_OF_CHLDRN_13_18 STRING,I1_GNDR_CODE STRING,I1_INDIV_HHLD_STATUS_CODE STRING,
+NUMBER_OF_CHLDRN_18_OR_LESS STRING,PRESENCE_OF_CHLDRN STRING,TRW_INCOME_CD_V4 STRING,statcd_hh_mem1 STRING,statcd_hh_mem2 STRING,statcd_hh_mem3 STRING,
+statcd_hh_mem4 STRING,statcd_hh_mem5 STRING,statcd_hh_mem6 STRING,statcd_hh_mem7 STRING,statcd_hh_mem8 STRING,
+statcd_hh_mem_cnt1 INT,statcd_hh_mem_cnt2 INT,statcd_hh_mem_cnt3  INT,statcd_hh_mem_cnt4 INT,statcd_hh_mem_cnt5 INT,
+statcd_hh_mem_cnt6 INT,statcd_hh_mem_cnt7 INT,statcd_hh_mem_cnt8 INT,
+new_id STRING,Mailed_Date STRING,Day STRING,Date STRING,
+TimeStamp STRING,Am_Pm STRING,Month_Desc STRING)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '|'
+LOCATION 'hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/GA/outputFromPigSampleNew/'
+TBLPROPERTIES("skip.header.line.count"="1");
+
+CREATE EXTERNAL TABLE jig13895.bDataFinalGAsampleNew (CLICK_FLG STRING,OPEN_FLG STRING,ASIAN_CD STRING,GNDR_OF_CHLDRN_0_3 STRING,
+GNDR_OF_CHLDRN_4_6 STRING,GNDR_OF_CHLDRN_7_9 STRING,GNDR_OF_CHLDRN_10_12 STRING,GNDR_OF_CHLDRN_13_18 STRING,I1_GNDR_CODE STRING,I1_INDIV_HHLD_STATUS_CODE STRING,
+NUMBER_OF_CHLDRN_18_OR_LESS STRING,PRESENCE_OF_CHLDRN STRING,TRW_INCOME_CD_V4 STRING,statcd_hh_mem1 STRING,statcd_hh_mem2 STRING,statcd_hh_mem3 STRING,
+statcd_hh_mem4 STRING,statcd_hh_mem5 STRING,statcd_hh_mem6 STRING,statcd_hh_mem7 STRING,statcd_hh_mem8 STRING,
+new_id STRING,Mailed_Date STRING,Day STRING,Date STRING,
+TimeStamp STRING,Am_Pm STRING,Month_Desc STRING)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '|'
+LOCATION 'hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/GA/outputFromPigSampleNew/'
+TBLPROPERTIES("skip.header.line.count"="1");
+
+
+
+--check the data in the table
+
+Questions"
+------------
+1.Find the Click To Open Rate i.e overall CTOR
+
+SELECT ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y';
+
+o/p: 17.55
+
+--Find CTOR by gender
+
+SELECT I1_GNDR_CODE,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY I1_GNDR_CODE ORDER BY I1_GNDR_CODE;
+
+o/p:
+        33.33
+B       14.29
+F       18.29
+M       13.5
+U       18.07
+
+--Find CTOR by time of the day
+
+SELECT TimeStamp,Am_Pm,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY TimeStamp,Am_Pm ORDER BY TimeStamp,Am_Pm;
+
+//check whether we have to use Am/pm
+
+o/p:
+01:02   PM      15.79
+01:03   PM      9.55
+01:04   PM      15.1
+02:39   PM      16.22
+03:40   PM      54.61
+03:51   PM      29.25
+03:52   PM      10.79
+04:24   PM      16.29
+04:59   PM      40.88
+05:26   PM      0.0
+10:18   AM      9.09
+11:19   AM      20.36
+11:34   AM      62.76
+12:35   PM      40.0
+
+
+--Find CTOR by Day of the week
+
+SELECT Day,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY Day ORDER BY Day;
+
+o/p:
+
+Fri     12.24
+Mon     38.64
+Thu     18.14
+Tue     20.36
+Wed     14.6
+
+
+--Find CTOR by Month
+
+SELECT Month_Desc,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY Month_Desc ORDER BY Month_Desc;
+
+o/p:
+Oct     9.55
+Sep     17.89
+
+--Find CTOR by Lead's Income group
+
+SELECT TRW_INCOME_CD_V4,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY TRW_INCOME_CD_V4 ORDER BY TRW_INCOME_CD_V4;
+
+o/p:
+        23.47
+J       19.83
+K       17.32
+L       16.12
+M       20.02
+N       16.84
+O       17.85
+P       16.7
+Q       14.15
+R       17.77
+U       0.0
+
+do we have to show the income distribution
+
+
+--Find CTOR by Lead's Ethnicity
+
+SELECT ASIAN_CD,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY ASIAN_CD ORDER BY ASIAN_CD;
+
+o/p:
+        17.63
+0       16.93
+47      0.0
+48      0.0
+
+
+--Find CTOR by Lead's Household status
+
+SELECT I1_INDIV_HHLD_STATUS_CODE,ROUND(SUM(CASE WHEN CLICK_FLG='Y' THEN 1 ELSE 0 END)/count(*)*100,2)
+from bdatafinalgasample where OPEN_FLG='Y' GROUP BY I1_INDIV_HHLD_STATUS_CODE ORDER BY I1_INDIV_HHLD_STATUS_CODE;
+
+o/p:
+        16.67
+D       17.19
+H       17.2
+P       18.96
+U       17.34
+W       18.0
+Y       12.11
+
+2.Find Household members infomation
+
+a.Find count of leads who has information about the members of household
+
+SELECT CASE WHEN statcd_hh_mem1 != "null" OR statcd_hh_mem_cnt2 != "null" OR statcd_hh_mem_cnt3 != "null" OR statcd_hh_mem_cnt4 != "null" OR 
+statcd_hh_mem_cnt5 != "null" OR statcd_hh_mem_cnt6 != "null" OR statcd_hh_mem_cnt7 != "null" OR statcd_hh_mem_cnt8 != "null" THEN 1 ELSE 0 END) AS total FROM bdatafinalgasamplenew;
+
+SELECT SUM(CASE WHEN SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8) >0
+THEN 1 ELSE 0 END)) from bdatafinalgasampleNew where new_id='160033';
+
+SELECT SUM(CASE WHEN (SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8)) >0 THEN 1 ELSE 0 END )from jig13895.bdatafinalgasampleNew where new_id='160033';
+--not able to use above command..clarify
+
+CREATE TABLE jig13895.leads_count AS SELECT CASE WHEN (SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8)) >0 THEN 1 ELSE 0 END AS lead_count from jig13895.bdatafinalgasampleNew;
+
+SELECT SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8) from jig13895.bdatafinalgasampleNew where new_id='160033';
+SELECT CASE WHEN (SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8)) >0 THEN 1 ELSE 0 END from jig13895.bdatafinalgasampleNew where new_id='160033';
+
+SELECT CASE WHEN (statcd_hh_mem_cnt1 != "null" OR statcd_hh_mem_cnt2 != "null" OR statcd_hh_mem_cnt3 != "null" OR statcd_hh_mem_cnt4 != "null" OR 
+statcd_hh_mem_cnt5 != "null" OR statcd_hh_mem_cnt6 != "null" OR statcd_hh_mem_cnt7 != "null" OR statcd_hh_mem_cnt8 != "null") THEN 1 ELSE 0 END AS total FROM jig13895.bdatafinalgasampleNew where new_id='160033';
+
+SELECT SUM (CASE WHEN statcd_hh_mem1 != "null" OR statcd_hh_mem2 != "null" THEN 1 ELSE 0 END ) AS total FROM jig13895.bdatafinalgasampleNew where new_id='160033';
+
+SELECT SUM (CASE WHEN statcd_hh_mem1 != "null" OR statcd_hh_mem2 != "null" OR statcd_hh_mem3 != "null" OR statcd_hh_mem4 != "null" OR statcd_hh_mem5 != "null" OR statcd_hh_mem6 != "null" OR statcd_hh_mem7 != "null" OR statcd_hh_mem8 != "null" THEN 1 ELSE 0 END ) AS total FROM jig13895.bdatafinalgasampleNew where new_id='160033';
+SELECT SUM (CASE WHEN statcd_hh_mem1 != "null" OR statcd_hh_mem2 != "null" OR statcd_hh_mem3 != "null" OR statcd_hh_mem4 != "null" OR statcd_hh_mem5 != "null" OR statcd_hh_mem6 != "null" OR statcd_hh_mem7 != "null" OR statcd_hh_mem8 != "null" THEN 1 ELSE 0 END ) AS total FROM jig13895.bdatafinalgasampleNew;
+
+o/p-->194537
+
+CREATE TABLE jig13895.leads_count_new AS SELECT SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8) AS lead_count from jig13895.bdatafinalgasampleNew;
+
+SELECT SUM(CASE WHEN (lead_cnt) >0 THEN 1 ELSE 0 END ) from jig13895.leads_count;
+
+corrcect query:
+SELECT SUM (CASE WHEN statcd_hh_mem1 != "null" OR statcd_hh_mem2 != "null" OR statcd_hh_mem3 != "null" OR statcd_hh_mem4 != "null" OR statcd_hh_mem5 != "null" OR statcd_hh_mem6 != "null" OR statcd_hh_mem7 != "null" OR statcd_hh_mem8 != "null" THEN 1 ELSE 0 END ) AS total FROM jig13895.bdatafinalgasampleNew;
+
+o/p-->194537
+
+b.Find count of household number of household members
+SELECT SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8) from jig13895.bdatafinalgasampleNew;
+  
+o/p--> 443684
+
+c.Find count of household members by type
+
+SELECT SUM((CASE WHEN statcd_hh_mem1 == "U" THEN 1 ELSE 0 END) +
+  (CASE WHEN statcd_hh_mem2 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem3 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem4 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem5 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem6 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem7 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem8 == "U" THEN 1 ELSE 0 END)) FROM jig13895.bdatafinalgasampleNew ;
+
+
+o/p-->157125
+
+d.Find % of household members type
+
+
+SELECT ROUND((SUM((CASE WHEN statcd_hh_mem1 == "U" THEN 1 ELSE 0 END) +
+  (CASE WHEN statcd_hh_mem2 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem3 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem4 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem5 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem6 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem7 == "U" THEN 1 ELSE 0 END)+
+(CASE WHEN statcd_hh_mem8 == "U" THEN 1 ELSE 0 END)) ) / 
+(SUM(statcd_hh_mem_cnt1+statcd_hh_mem_cnt2+statcd_hh_mem_cnt3+statcd_hh_mem_cnt4+statcd_hh_mem_cnt5+statcd_hh_mem_cnt6+statcd_hh_mem_cnt7+statcd_hh_mem_cnt8)) * 100,2)
+FROM jig13895.bdatafinalgasampleNew ;
+
+o/p-->35.41%
+
+e.how many households have children
+
+SELECT COUNT(*) FROM jig13895.bdatafinalgasampleNew WHERE PRESENCE_OF_CHLDRN=="Y";
+
+O/P-->
+
+f.Overall how many children are there
+SELECT SUM(NUMBER_OF_CHLDRN_18_OR_LESS) FROM jig13895.bdatafinalgasampleNew WHERE PRESENCE_OF_CHLDRN=="Y";
+
+g.how many of the children are male and female
+SELECT SUM((CASE WHEN GNDR_OF_CHLDRN_0_3 == "M" THEN 1 ELSE 0 END) +
+  (CASE WHEN GNDR_OF_CHLDRN_4_6 == "M" THEN 1 ELSE 0 END)+
+(CASE WHEN GNDR_OF_CHLDRN_7_9 == "M" THEN 1 ELSE 0 END)+
+(CASE WHEN GNDR_OF_CHLDRN_10_12 == "M" THEN 1 ELSE 0 END)+
+(CASE WHEN GNDR_OF_CHLDRN_13_18 == "M" THEN 1 ELSE 0 END)) AS Males, SUM((CASE WHEN GNDR_OF_CHLDRN_0_3 == "F" THEN 1 ELSE 0 END) +
+  (CASE WHEN GNDR_OF_CHLDRN_4_6 == "F" THEN 1 ELSE 0 END)+
+(CASE WHEN GNDR_OF_CHLDRN_7_9 == "F" THEN 1 ELSE 0 END)+
+(CASE WHEN GNDR_OF_CHLDRN_10_12 == "F" THEN 1 ELSE 0 END)+
+(CASE WHEN GNDR_OF_CHLDRN_13_18 == "F" THEN 1 ELSE 0 END)) AS Females FROM jig13895.bdatafinalgasampleNew where PRESENCE_OF_CHLDRN=="Y" and new_id='160033';
+
+o/p-->Males 29370 ; Females :23987
+
+------------------------------------------------------------------xxxxxx--------------------------------------------------------xxxxxx-------------------------------
