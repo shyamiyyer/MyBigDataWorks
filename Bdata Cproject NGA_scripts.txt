@@ -1,0 +1,152 @@
+--Create a directory
+hadoop fs -mkdir Cproject
+hadoop fs -mkdir Cproject/Bdata
+hadoop fs -mkdir Cproject/Bdata/NGA
+
+--crete input and output directories
+hadoop fs -mkdir Cproject/Bdata/NGA/input
+hadoop fs -mkdir Cproject/Bdata/NGA/output
+
+--check for the directory
+hadoop fs -ls Cproject
+
+--move the input file into Hdfs path
+hadoop fs -put customer.csv hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/NGA/input
+
+--check for the input file
+hadoop fs -ls Cproject/Bdata/NGA/input
+
+--Load data to PIG; do the data preprocessing/cleaning
+open grunt shell and do the execution
+
+to use piggybank,we have to first register the jar and define the function that u use; we can use either CSVLoader()/CSVExcelStorage();
+
+register '/home/data/piggybank.jar';
+define CSVLoader org.apache.pig.piggybank.storage.CSVLoader();
+
+cdata = LOAD '/user/Jig13895/Cproject/Bdata/NGA/input/customer.csv' USING CSVLoader AS (id:int,name:chararray,amount:int,sell_date:chararray,click:chararray,open:chararray,gender:chararray,salary:chararray,product:chararray);
+(or)
+cdata = LOAD '/user/Jig13895/Cproject/Bdata/NGA/input/customer.csv' USING org.apache.pig.piggybank.CSVExcelStorage AS (id:int,name:chararray,amount:int,sell_date:chararray,click:chararray,open:chararray,gender:chararray,salary:chararray,product:chararray);
+
+
+-- to remove the header line after loading
+cdataq = LOAD '/user/Jig13895/Cproject/Bdata/NGA/input/customer.csv' USING CSVLoader AS(id:int,name:chararray,amount:int,sell_date:chararray,click:chararray,open:chararray,gender:chararray,salary:chararray,product:chararray);
+ranked = rank cdataq;
+cdataq_no_header = filter ranked by $0>1;
+dump cdataq_no_header;
+cdataq_1 = foreach cdataq_no_header generate $1..;
+dump cdataq_1;
+--check the data that u have loaded; give limits if u have more data
+dump cdata;
+
+(or)
+ranked = rank cdata by $0;
+cdataq_no_header = filter ranked by $0>1;
+cdataq_1 = foreach cdataq_no_header generate $1..;
+
+--Clean the data in PIG
+
+cdata_new = FOREACH cdata generate (SUBSTRING(sell_date,5,7)=='01'?'January':'Null'); --to get month
+cdata_new = FOREACH cdata generate (SUBSTRING(sell_date,5,7)=='01'?'January':'Null') LIMIT ordered 5; --getting error
+cdata_new = FOREACH cdata generate (CONCAT('20',SUBSTRING(sell_date,5,7))) AS Year; --to get year
+cdata_new = FOREACH cdata generate (SUBSTRING(sell_date,0,3)) AS Day; --to get day
+cdata_new = FOREACH cdata generate (SUBSTRING(sell_date,5,13)) AS Date; --to get date
+
+
+cdata_new = FOREACH cdata generate id AS id,name AS name,amount AS amount,sell_date AS sell_date,click AS click,open AS open,gender AS gender,(salary==''? 'null':(salary is null?'null':salary)) AS salary,product AS product,
+(SUBSTRING(sell_date,5,13)) AS Date,(SUBSTRING(sell_date,0,3)) AS Day,(SUBSTRING(sell_date,5,7)) AS Month,(SUBSTRING(sell_date,5,7)=='01' ? 'January':(SUBSTRING(sell_date,5,7)=='02' ? 'February':(SUBSTRING(sell_date,5,7)=='03' ? 'March':(SUBSTRING(sell_date,5,7)=='04' ? 'April':(SUBSTRING(sell_date,5,7)=='05' ? 'May':(SUBSTRING(sell_date,5,7)=='06' ? 'June':(SUBSTRING(sell_date,5,7)=='07' ? 'July':(SUBSTRING(sell_date,5,7)=='08' ? 'August':(SUBSTRING(sell_date,5,7)=='09' ? 'September':(SUBSTRING(sell_date,5,7)=='10' ? 'October':(SUBSTRING(sell_date,5,7)=='11' ? 'November':'December'))))))))))) AS Month_Desc,
+(CONCAT('20',SUBSTRING(sell_date,11,13))) AS Year,(SUBSTRING(sell_date,14,19)) AS TimeStamp, (SUBSTRING(sell_date,20,22)) AS Am_Pm;
+
+--check the filtered/cleaned data
+
+dump cdata_new;
+
+--store the pig output in HDFS
+--note: outpt directory should not exist in prior
+
+STORE cdata_new INTO 'hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/NGA/outputFromPig' USING PigStorage(','); //this will have mismatch in o/p because the date part in pig column has a comma in it. so use '|'.
+STORE cdata_new INTO 'hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/NGA/outputFromPigNew' USING PigStorage('|'); 
+
+--check the output file
+
+hadoop fs -ls /user/Jig13895/Cproject/Bdata/NGA/outputFromPig
+hadoop fs -cat /user/Jig13895/Cproject/Bdata/NGA/outputFromPig/part-m-00000
+
+hadoop fs -ls /user/Jig13895/Cproject/Bdata/NGA/outputFromPigNew
+hadoop fs -cat /user/Jig13895/Cproject/Bdata/NGA/outputFromPigNew/part-m-00000
+
+--create table in hive; Mostly it will be an external table
+
+CREATE EXTERNAL TABLE jig13895.bDataFinalNGA (id STRING,name STRING,amount STRING,sell_date STRING,click STRING,open STRING,gender STRING,salary STRING,
+product STRING,date STRING,day STRING,month STRING,month_desc STRING,year STRING,timestamp STRING,am_pm STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '|'
+LOCATION 'hdfs://nn.cdh2017.com:8020/user/Jig13895/Cproject/Bdata/NGA/outputFromPigNew/'
+TBLPROPERTIES("skip.header.line.count"="1");
+
+--check the data in the table
+
+select * from bdatafinalnga;
+
+Q1.Find the click to open ratio i.e overall CTOR
+select SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) from  bdatafinalnga; --get the click count
+
+select count(*) from  bdatafinalnga where open='Y'; -- get the open count
+
+now try to integrate both in a single query
+
+select SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100
+from  bdatafinalnga where open='Y';
+
+select ROUND(SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100,2) 
+from  bdatafinalnga where open='Y'; --round the o/p to 2 digits
+
+o/p-->0.85
+
+Q2.Find the click to open ratio by gender
+select gender,ROUND(SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100,2) 
+from  bdatafinalnga where open='Y' GROUP BY gender;
+
+o/p--> F:66.67; M:88.24;
+
+Q3.Find the click to open ratio by day of the week
+select day,ROUND(SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100,2) 
+from  bdatafinalnga where open='Y' GROUP BY day;
+
+o/p-->sat:85.0;
+
+Q4.Find the click to open ratio by month of the year
+
+select month,ROUND(SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100,2) 
+from  bdatafinalnga where open='Y' GROUP BY month;
+
+o/p-->01:85.0;
+
+Q5.Find the click to open ratio by month desc of the year and putthe results in a new table
+hint:use create table command and AS keyword
+
+CREATE TABLE jig13895.ctor_month AS select month_desc,ROUND(SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100,2) 
+from  bdatafinalnga where open='Y' GROUP BY month_desc;
+
+select * from ctor_month;
+
+o/p--> January:85.0;
+
+
+Q6.Find the click to open ratio by salary group
+
+select salary,ROUND(SUM(CASE WHEN click='Y' THEN 1 ELSE 0 END) / count(*)*100,2) 
+from  bdatafinalnga where open='Y' GROUP BY salary;
+
+o/p:
+1000000 100.0
+200000  75.0
+2000000 100.0
+300000  50.0
+3000000 100.0
+400000  50.0
+500000  100.0
+null    100.0
+
+------------------------------------------------------------------xxxxxx--------------------------------------------------------xxxxxx-------------------------------
